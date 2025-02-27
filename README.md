@@ -10,10 +10,10 @@ This repository contains all of the work towards the areas of interest for the P
 <br>
 - Weather <br>
 - Laguna Caliente Lake Extent (generate_lake_extent_masks.py) <br><br>
-   The script can be run with: ```python<3> generate_lake_extent_masks.py <year> <start_day> [<end_day>]```, where <year> is the particular year of interest, and <start_day> and the optional <end_day> specific which days of those years to generate the lake extent binary mask for. This script will use the IR images taken by the VPMI system at the Poas Volcano. If no end_day is specified, the mask for the particular start_day will be generated, only. For example: <br> <br>
+   The script can be run with: ```python<3> generate_lake_extent_masks.py "year" "start_day" ("end_day")```, where "year" is the particular year of interest, and <start_day> and the optional <end_day> specific which days of those years to generate the lake extent binary mask for. This script will use the IR images taken by the VPMI system at the Poas Volcano. If no end_day is specified, the mask for the particular start_day will be generated, only. For example: <br> <br>
 Run: ```python3 generate_lake_extent_mask.py 2024 67``` <br>
 Output: <br>
 ```Lake extent overlay written to outputs/lake_extent_masks/2024/67_lake_extent.png``` <br>
 ```Overlaying white areas for lake_extent/images/2024/67_lake_extent, saving to lake_extent_masks/2024/67_lake_extent.png``` <br>
-```Overlay created using a threshold of 183 votes``` <br>
+```Overlay created using a threshold of 183 votes``` <br><br>
 - Eastern Terrace Slumping
