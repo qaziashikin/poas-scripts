@@ -7,6 +7,10 @@ import sys
 import cv2
 
 class IRImageClassifier:
+    '''
+        This classifier must be run on an IR image taken from the VPMI imaging system at the Poas Volcano.
+        Changes to the assumed camera parameters will shift the results.
+    '''
     def __init__(self):
         self.plume_detector = PlumeDetector()
         self.fence_detector = FenceDetector()
