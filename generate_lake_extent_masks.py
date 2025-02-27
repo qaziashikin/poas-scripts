@@ -128,7 +128,7 @@ class LakeExtentMaskGenerator():
 
 if __name__ == "__main__":
     if len(sys.argv) not in [3, 4]:
-        print("Usage: lake_extent.py <year> <start_day> [<end_day>]")
+        print("Usage: generate_lake_extent_masks.py <year> <start_day> [<end_day>]")
         sys.exit(1)
 
     try:
