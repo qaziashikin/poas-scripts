@@ -1,8 +1,8 @@
-from poas.ir.classifiers.fence_detector import FenceDetector
-from poas.ir.classifiers.fumaroles_detector import FumarolesDetector
-from poas.ir.classifiers.plume_detector import PlumeDetector
-from poas.ir.classifiers.low_visibility_classifier import LowVisibilityClassifier
-from poas.ir.classifiers.degraded_classifier import DegradedClassifier
+from classifiers.fence_detector import FenceDetector
+from classifiers.fumaroles_detector import FumarolesDetector
+from classifiers.plume_detector import PlumeDetector
+from classifiers.low_visibility_classifier import LowVisibilityClassifier
+from classifiers.degraded_classifier import DegradedClassifier
 import sys
 import cv2
 

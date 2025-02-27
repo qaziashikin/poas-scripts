@@ -5,8 +5,8 @@ import cv2 as cv
 import pandas as pd
 import numpy as np
 from utilities import PoasImageUtilities
-from poas.ir.classifiers.fence_detector import FenceDetector
-from poas.ir.classifiers.fumaroles_detector import FumarolesDetector
+from classifiers.fence_detector import FenceDetector
+from classifiers.fumaroles_detector import FumarolesDetector
 
 class PlumeDetector:
     def __init__(self):
