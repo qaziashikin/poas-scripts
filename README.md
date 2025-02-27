@@ -20,8 +20,7 @@ This repository contains all of the work towards the areas of interest for the P
   ```python3 generate_lake_extent_masks.py 2024 67```  
   
   Output: <br>
-  ```Lake extent overlay written to outputs/lake_extent_masks/2024/67_lake_extent.png```<br>
-  ```Overlaying white areas for lake_extent/images/2024/67_lake_extent, saving to lake_extent_masks/2024/67_lake_extent.png```<br>
+  ```Overlaying white areas for lake_extent/images/2024/67_lake_extent, saving to outputs/lake_extent_masks/2024/67_lake_extent.png```<br>
   ```Overlay created using a threshold of 183 votes```
 
   ![image](https://github.com/user-attachments/assets/3b0929af-67a5-412a-bc00-6907e9b25a9a) <br>
