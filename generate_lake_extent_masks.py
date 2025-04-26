@@ -16,18 +16,17 @@ class LakeExtentMaskGenerator():
         self.utilities = PoasImageUtilities()
 
 
-    def get_images_by_day(self, day, year, folder_path):
+    def get_images_by_day(self, day, year, images_path):
         absolute = Path(f"/data/vulcand/archive/imagery/infrared/345040/{year}/VPMI/still")
 
-        classifier_on_desired_data = folder_path
-        classifier_on_desired_data.mkdir(parents=True, exist_ok=True)
+        images_path.mkdir(parents=True, exist_ok=True)
         
         day_str = f"{day:03}"
         day_folder = absolute / day_str
         
         if day_folder.exists() and day_folder.is_dir():
             for image_file in day_folder.glob("*.jpg"):  
-                shutil.copy(image_file, classifier_on_desired_data)
+                shutil.copy(image_file, images_path)
         else:
             print(f"Day folder does not exist: {day_folder}")
 
@@ -56,14 +55,14 @@ class LakeExtentMaskGenerator():
         return int(total_used_images * (18 / 100)), min_white_val
 
 
-    def overlay_white_areas(self, ir_images_path_name, lake_extent_mask_path_name, lake_extent_mask_file_name):
+    def overlay_white_areas(self, ir_images_path, lake_extent_mask_path_name, lake_extent_mask_file_name, year):
         image_files = []
 
         Path("outputs").mkdir(parents=True, exist_ok=True)
-        plume_percent_file = open(f"outputs/{year}_plume_percent.txt", "a") # TXT file generation for plots
+        plume_percent_file = open(f"outputs/data/{year}_plume_percent.txt", "a") # TXT file generation for plots
         Path(f"outputs/{lake_extent_mask_path_name}").mkdir(parents=True, exist_ok=True)
 
-        plume_percent_file_path = f"outputs/{year}_plume_percent.txt"
+        plume_percent_file_path = f"outputs/data/{year}_plume_percent.txt"
 
         existing_lines = set()
         if Path(plume_percent_file_path).exists():
@@ -73,7 +72,7 @@ class LakeExtentMaskGenerator():
         plume_count = 0
         total_images = 0
 
-        for image_file in ir_images_path_name.glob("*.jpg"):
+        for image_file in ir_images_path.glob("*.jpg"):
             total_images += 1
 
             img = cv.imread(str(image_file))
@@ -92,13 +91,11 @@ class LakeExtentMaskGenerator():
             print("Need at least two images to perform overlay.")
             return
         
-        result_str = f"{ir_images_path_name}: {plume_count} Plumes; {(plume_count / total_images) * 100}% of all images"
+        result_str = f"{ir_images_path}: {plume_count} Plumes; {(plume_count / total_images) * 100}% of all images"
         if result_str not in existing_lines:
             with open(plume_percent_file_path, "a") as plume_percent_file:
                 plume_percent_file.write(result_str + "\n")
                 print(f"Written to plume percent file: {result_str}")
-
-        plume_percent_file.write(result_str + "\n")
 
         white_pixel_counts = None
 
@@ -121,14 +118,13 @@ class LakeExtentMaskGenerator():
         
         output = f"outputs/{lake_extent_mask_path_name}/{lake_extent_mask_file_name}"
         cv.imwrite(output, final_overlay)
-        print(f"Lake extent overlay written to {output}")
-        print(f"Overlaying white areas for {ir_images_path_name}, saving to {lake_extent_mask_path_name}/{lake_extent_mask_file_name}")
+        print(f"Overlaying white areas for {ir_images_path}, saving to {output}")
         print(f"Overlay created using a threshold of {vote_threshold} votes")
 
 
 if __name__ == "__main__":
     if len(sys.argv) not in [3, 4]:
-        print("Usage: generate_lake_extent_masks.py <year> <start_day> [<end_day>]")
+        print("Usage: generate_lake_extent.py <year> <start_day> [<end_day>]")
         sys.exit(1)
 
     try:
@@ -150,10 +146,9 @@ if __name__ == "__main__":
     lake_extent_mask_generator = LakeExtentMaskGenerator()
 
     for day in range(start_day, end_day + 1):
-        ir_images_path_name = Path(f"lake_extent/images/{year}/{day}_lake_extent")
-        lake_extent_mask_generator.get_images_by_day(day, year, ir_images_path_name)
+        ir_images_path = Path(f"/data/vulcand/archive/imagery/infrared/345040/{year}/VPMI/still") / f"{day:03}"
 
         lake_extent_mask_file_name = f"{day}_lake_extent.png"
         lake_extent_mask_path_name = f"lake_extent_masks/{year}"
 
-        lake_extent_mask_generator.overlay_white_areas(ir_images_path_name, lake_extent_mask_path_name, lake_extent_mask_file_name)
+        lake_extent_mask_generator.overlay_white_areas(ir_images_path, lake_extent_mask_path_name, lake_extent_mask_file_name, tear)

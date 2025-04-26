@@ -24,8 +24,8 @@ class LakeExtentStatisticGenerator:
         return date
 
 
-    def generate_lake_extent_statistics(self, root_output_dir):
-        path_to_lake_extent_masks = Path("outputs/lake_extent_masks")
+    def generate_lake_extent_statistics(self, root_output_dir, path_to_lake_extent_masks):
+        path_to_lake_extent_masks = Path(path_to_lake_extent_masks)
 
         for folder in path_to_lake_extent_masks.iterdir():
             if not folder.is_dir():
@@ -33,7 +33,7 @@ class LakeExtentStatisticGenerator:
             
             year = folder.name 
             Path(root_output_dir).mkdir(parents=True, exist_ok=True)
-            csv_dir = f"{root_output_dir}/csv"
+            csv_dir = f"{root_output_dir}/data"
             Path(csv_dir).mkdir(parents=True, exist_ok=True)
             output_file = f"{csv_dir}/lake_extent_estimates_{year}.csv"
             
@@ -41,14 +41,17 @@ class LakeExtentStatisticGenerator:
 
             with open(output_file, "w", newline='') as f:
                 writer = csv.writer(f)
-                writer.writerow(["Date", "White Pixel Count", "Lake Area (sq meters)"])
+                writer.writerow(["Date", "White Pixel Count", "Lake Area (sq meters)", "Outlier"])
                 
                 for mask_file in mask_png_files:
                     white_pixel_count = self.count_white_pixels(mask_file)
                     if white_pixel_count is not None:
                         date = self.extract_date_from_filename(mask_file.name, year)
-                        lake_area = GeometricCorrector.apply_geometric_correction(int(year), int(mask_file.stem.split('_')[0]))
-                        writer.writerow([date, white_pixel_count, lake_area])
+
+                        geometric_corrector = GeometricCorrector(mask_file)
+                        lake_area = geometric_corrector.calculate_real_world_area()
+                        
+                        writer.writerow([date, white_pixel_count, lake_area, "False"])
 
             print(f"Statistics saved to {output_file}")
 
@@ -57,4 +60,5 @@ if __name__ == "__main__":
     lake_extent_stats_generator = LakeExtentStatisticGenerator()
 
     root_output_dir = "outputs"
-    lake_extent_stats_generator.generate_lake_extent_statistics(root_output_dir)
+    path_to_lake_extent_masks = "outputs/lake_extent_masks"
+    lake_extent_stats_generator.generate_lake_extent_statistics(root_output_dir, path_to_lake_extent_masks)
