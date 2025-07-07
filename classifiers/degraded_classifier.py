@@ -1,97 +1,110 @@
-'''
-    Classification of degraded images. Conditional classifier - run prior to other detectors.
-'''
+"""
+Classification of degraded images.
+
+This conditional classifier is run prior to other classifiers, as degraded
+images are generally not useful.
+
+:author:
+    Qazi T. Ashikin
+
+"""
+
 import cv2 as cv
 import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
 
-class DegradedClassifier:
-    def __init__(self):
-        """
-        Initialize the class DegradedClassifier.
-        """
-
-    def plot_curve_for_pixel_means(column_averages):
-        x = np.array(range(16))
-        y = np.array(column_averages)
-
-        X = x.reshape(-1, 1)
-
-        poly_features = PolynomialFeatures(degree=2)
-        X_poly = poly_features.fit_transform(X)
-
-        model = LinearRegression()
-        model.fit(X_poly, y)
-
-        X_smooth = np.linspace(x.min(), x.max(), 200).reshape(-1, 1)
-        X_smooth_poly = poly_features.transform(X_smooth)
-        y_smooth = model.predict(X_smooth_poly)
-
-        r2 = model.score(X_poly, y)
-
-        a = model.coef_[2]
-        b = model.coef_[1]
-        c = model.intercept_
-
-        plt.figure(figsize=(12, 6))
-        plt.scatter(x, y, color='blue', label='Original data points')
-        plt.plot(X_smooth, y_smooth, color='red', label='Quadratic fit')
-        plt.title('Average Pixel Values with Quadratic Fit')
-        plt.xlabel('Column Section (width 40 pixels)')
-        plt.ylabel('Average Pixel Value')
-        plt.legend()
-        plt.grid(True, alpha=0.3)
-
-        equation = f'y = {a:.2f}x² + {b:.2f}x + {c:.2f}'
-        plt.text(0.02, 0.95, f'Equation: {equation}\nR² = {r2:.4f}', 
-                transform=plt.gca().transAxes, 
-                bbox=dict(facecolor='white', alpha=0.8))
-
-        plt.show()
-
-        print(f"Quadratic equation: {equation}")
-        print(f"R-squared value: {r2:.4f}")
-
-        return a, b, c
-    
-
-    def calculate_column_pixel_means(self, image, column_width=40):
-        num_columns = image.shape[1] // column_width
-        
-        column_averages = []
-        
-        for i in range(num_columns):
-            start_col = i * column_width
-            end_col = start_col + column_width
-            column_section = image[:, start_col:end_col]
-            average = np.mean(column_section)
-            column_averages.append(average)
-        
-        return column_averages
+from .utils import make_greyscale
 
 
-    def get_coefficients_for_linear_regression(self, column_averages):
-        x = np.array(range(16))
-        y = np.array(column_averages)
+def _calculate_column_pixel_means(
+    image: np.ndarray, column_width: int = 40
+) -> np.ndarray:
+    """
+    Compute the average pixel values in the image for columns of a specified pixel
+    width.
 
-        X = x.reshape(-1, 1)
+    Parameters
+    ----------
+    image:
+        Array of pixel values that constitute the image.
+    column_width:
+        The number of horizontal pixels in each column. Default: 40.
 
-        poly_features = PolynomialFeatures(degree=2)
-        X_poly = poly_features.fit_transform(X)
+    Returns
+    -------
+     :
+        The average pixel values in fixed width columns across the image.
 
-        model = LinearRegression()
-        model.fit(X_poly, y)
+    """
 
-        a = model.coef_[2]
-        b = model.coef_[1]
-        c = model.intercept_
+    assert image.shape[1] % column_width == 0
 
-        return a, b, c
+    n_columns = image.shape[1] // column_width
+    blocks = image.reshape(n_columns, image.shape[0], column_width)
+    block_averages = [np.mean(block.flatten()) for block in blocks]
+
+    return np.asarray(block_averages)
 
 
-    def is_degraded(self, img):
-        blurred_img = cv.GaussianBlur(img, (35, 35), 15)
-        a, _, _ = self.get_coefficients_for_linear_regression(self.calculate_column_pixel_means(blurred_img))
-        return a > 0.4
+def _fit_quadratic(column_averages: np.ndarray) -> tuple[float, float, float]:
+    """
+    Compute the best-fitting coefficients for a quadratic fit to the column pixels
+    averages.
+
+    Parameters
+    ----------
+    column_averages:
+        The average pixel values in fixed width columns across the image.
+
+    Returns
+    -------
+     :
+        Best-fitting quadratic coefficients, determined using linear regression.
+
+    """
+
+    X = np.array(range(len(column_averages))).reshape(-1, 1)
+    X_poly = PolynomialFeatures(degree=2).fit_transform(X)
+
+    model = LinearRegression()
+    model.fit(X_poly, column_averages)
+
+    a = model.coef_[2]
+    b = model.coef_[1]
+    c = model.intercept_
+
+    return a, b, c
+
+
+def is_degraded(image: np.ndarray, threshold: float = 0.4) -> bool:
+    """
+    Determine whether an image exhibits the characteristic 'degraded' feature that is
+    observed for the Calibir GXM IR camera.
+
+    This degradation, thought to arise during periods when the camera is adjusting the
+    dynamic range of the sensor, appears as a characteristic pattern of brighter pixels
+    in the outer columns, through to darker pixels in the centre of the images. This is
+    detected by computing the average pixel values for fixed-width columns in the image
+    and fitting a polynomial function to it. The polynomial for degraded images will
+    have a ~quadratic shape.
+
+    Parameters
+    ----------
+    image:
+        The image to be classified.
+    threshold:
+        The threshold above which an image is classified as degraded. Default: 0.4.
+
+    Returns
+    -------
+     :
+        Classification of the image, where True indicates the image is degraded.
+
+    """
+
+    greyscale_image = make_greyscale(image)
+    blurred_image = cv.GaussianBlur(greyscale_image, (35, 35), 15)
+    a, _, _ = _fit_quadratic(_calculate_column_pixel_means(blurred_image))
+
+    return a > threshold
