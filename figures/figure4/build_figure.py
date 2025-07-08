@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-def annotate_image(image_path, output_path, append_letter, annotations_data, font_path="data/fonts/helvetica.ttf"):
+def annotate_image(image_path, output_path, append_letter, annotations_data, font_path="../data/fonts/helvetica-bold.ttf"):
     try:
         img = Image.open(image_path).convert("RGB")
     except FileNotFoundError:
@@ -24,14 +24,14 @@ def annotate_image(image_path, output_path, append_letter, annotations_data, fon
         label_font_size = 10 
 
     try:
-        append_letter_font_size = 18
+        append_letter_font_size = 16
         append_letter_font = ImageFont.truetype(font_path, append_letter_font_size)
     except IOError:
         append_letter_font = ImageFont.load_default()
         append_letter_font_size = 10
 
     text_color = (255, 255, 255)
-    box_thickness = 1
+    box_thickness = 2
 
     for annotation in annotations_data:
         x_start, y_start, x_end, y_end = annotation["coords"]
@@ -101,7 +101,12 @@ def main():
     img2_pil = annotate_image(bad_vis_img, output_bad_img, "b", annotations_poor_visibility)
 
     if img1_pil and img2_pil:
-        fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+        # Calculate figure size in inches for 175mm width
+        width_inches = 175 / 25.4
+        # Maintain original aspect ratio (12/6 = 2)
+        height_inches = width_inches / 2
+
+        fig, axes = plt.subplots(1, 2, figsize=(width_inches, height_inches))
 
         axes[0].imshow(np.array(img1_pil))
         axes[0].axis('off')
