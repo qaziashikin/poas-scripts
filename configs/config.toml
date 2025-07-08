@@ -1,0 +1,81 @@
+# --- FENCE CLASSIFIER ---
+[classifiers.fence]
+type = "canny_edge_sum"
+greyscale = true
+rescale = true
+crop_to = [0, 480, 640, 100]
+threshold = 33000
+
+[classifiers.fence.gaussian_blur]
+ksize = [5, 5]
+sigmaX = 3
+
+[classifiers.fence.CLAHE]
+clipLimit = 2.0
+tileGridSize = [8, 8]
+
+[classifiers.fence.denoise]
+h = 6
+
+[classifiers.fence.canny]
+threshold1 = 150
+threshold2 = 220
+# ------------------------
+
+# --- PLUME CLASSIFIER ---
+[classifiers.plume]
+type = "canny_edge_sum"
+greyscale = true
+rescale = false
+crop_to = [40, 365, 300, 130]
+threshold = 91000
+
+[classifiers.plume.gaussian_blur]
+ksize = [5, 5]
+sigmaX = 3
+
+[classifiers.plume.CLAHE]
+clipLimit = 3.0
+tileGridSize = [8, 8]
+
+[classifiers.plume.canny]
+threshold1 = 80
+threshold2 = 150
+# ------------------------
+
+# --- LOW VIS CLASSIFIER ---
+[classifiers.low_visibility]
+type = "canny_edge_sum"
+greyscale = true
+rescale = false
+crop_to = [40, 345, 300, 120]
+threshold = 15000
+
+[classifiers.low_visibility.gaussian_blur]
+ksize = [5, 5]
+sigmaX = 3
+
+[classifiers.low_visibility.CLAHE]
+clipLimit = 2.5
+tileGridSize = [8, 8]
+
+[classifiers.low_visibility.canny]
+threshold1 = 20
+threshold2 = 60
+# --------------------------
+
+# --- FUMAROLES CLASSIFIER ---
+[classifiers.fumaroles]
+type = "contour_sum"
+greyscale = true
+rescale = false
+crop_to = [545, 190, 95, 50]
+threshold = 75
+
+[classifiers.fumaroles.CLAHE]
+clipLimit = 3.0
+tileGridSize = [8, 8]
+
+[classifiers.fumaroles.denoise]
+h = 10
+# ----------------------------
