@@ -10,8 +10,6 @@ import pandas as pd
 from scipy.interpolate import CubicSpline
 import os
 
-# Removed: plt.style.use("basic_style") - This style might not be available by default.
-
 def crop_image(img, x, y, h, v):
     """Crop an image based on given coordinates and dimensions."""
     height, width = 480, 640
@@ -301,20 +299,11 @@ def plot_lake_extent_timeseries(ax, lake_extents, non_outliers_df, outliers_df, 
     ax.set_ylim([0, lake_extents["Lake Area (sq meters)"].max() * 1.1])
     ax.set_ylabel("Lake Area (square meters)")
     ax.xaxis.set_major_locator(mdates.MonthLocator())
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%b '%y"))
     ax.set_xlabel("Date")
     ax.legend()
 
-    tick_labels = ax.get_xticklabels()
-    if tick_labels:
-        for label in tick_labels[1:]:
-            label_text = label.get_text()
-            try:
-                label_date = datetime.strptime(label_text, "%b %Y")
-                if label_date.month != 1:
-                    label.set_text(label_date.strftime("%b"))
-            except ValueError:
-                pass
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
     
     return second_date_data
 
@@ -339,12 +328,16 @@ def save_updated_data(lake_extents):
 
 def plot_lake_extent_with_grayed_out_outliers(top_julian_day: int, top_year: int, bottom_julian_day: int, bottom_year: int, output_filename: str = 'lake_extent_overview.png'):
     """Create lake extent visualization, showing outliers in gray but not counting them."""
-    fig = plt.figure(figsize=(29 / 2.54, 26 / 2.54), layout="constrained")
+    fig = plt.figure(figsize=(17.5 / 2.54, 15 / 2.54), layout="constrained")
     
     axes = fig.subplot_mosaic(
         """
         AABBC
+        AABBC
         DDDDD
+        DDDDD
+        DDDDD
+        EEFFG
         EEFFG
         """
     )
@@ -443,7 +436,7 @@ def plot_lake_extent_with_grayed_out_outliers(top_julian_day: int, top_year: int
         print(f"An unexpected error occurred during plotting: {e}")
 
     try:
-        fig.savefig(output_filename, dpi=300, bbox_inches='tight')
+        fig.savefig(output_filename, dpi=500, bbox_inches='tight')
         print(f"Plot saved successfully to {os.path.abspath(output_filename)}")
     except Exception as e:
         print(f"Error saving plot: {e}")
