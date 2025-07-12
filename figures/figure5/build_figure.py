@@ -230,7 +230,7 @@ def prepare_lake_extent_data():
 
 
 def plot_lake_extent_timeseries(ax, lake_extents, non_outliers_df, outliers_df, date, second_date):
-    """Plot the lake extent timeseries with outliers marked and a crosshair for the second date."""
+    """Plot the lake extent timeseries with outliers marked and vertical lines for the selected dates."""
     non_outliers_df = non_outliers_df.copy()
 
     non_outliers_df["Date"] = pd.to_datetime(non_outliers_df["Date"])
@@ -279,21 +279,11 @@ def plot_lake_extent_timeseries(ax, lake_extents, non_outliers_df, outliers_df, 
         label="Adjusted Running Average",
     )
 
+    # Plot vertical line for the top date
     ax.axvline(date, color="navy", linestyle="dashdot", linewidth=1)
-
-    second_date_data = lake_extents[lake_extents["Date"] == second_date]
-    if not second_date_data.empty:
-        ax.plot(
-            second_date_data["Date"],
-            second_date_data["Lake Area (sq meters)"],
-            color="blue",
-            marker="+",
-            markersize=9,
-            linestyle="none",
-            label='_nolegend_',
-            markeredgecolor='blue',
-            markeredgewidth=1
-        )
+    
+    # Plot vertical line for the bottom date
+    ax.axvline(second_date, color="blue", linestyle="dashdot", linewidth=1)
 
     ax.set_xlim([lake_extents["Date"].min(), lake_extents["Date"].max()])
     ax.set_ylim([0, lake_extents["Lake Area (sq meters)"].max() * 1.1])
@@ -301,11 +291,12 @@ def plot_lake_extent_timeseries(ax, lake_extents, non_outliers_df, outliers_df, 
     ax.xaxis.set_major_locator(mdates.MonthLocator())
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%b '%y"))
     ax.set_xlabel("Date")
-    ax.legend()
+    # ax.legend() # Removed the legend as requested
 
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
     
-    return second_date_data
+    # We no longer need to return date dataframes as we are connecting to vertical lines 
+    # instead of specific data points.
 
 
 def save_updated_data(lake_extents):
@@ -383,12 +374,16 @@ def plot_lake_extent_with_grayed_out_outliers(top_julian_day: int, top_year: int
             pd.notna(non_outliers_df["Lake Area (sq meters)"])
         ]
         
-        second_date_data = plot_lake_extent_timeseries(
+        # Plotting the timeseries with vertical lines for both dates
+        plot_lake_extent_timeseries(
             axes["D"], lake_extents, non_outliers_df, outliers_df, date, second_date
         )
         save_updated_data(lake_extents)
 
         max_y = axes['D'].get_ylim()[1]
+        min_y = axes['D'].get_ylim()[0]
+        
+        # Connection line for the top image (B -> D), connecting to the top of the vertical line
         con = patches.ConnectionPatch(
             xyA=(1, 0.5),
             coordsA=axes['B'].transAxes,
@@ -402,33 +397,19 @@ def plot_lake_extent_with_grayed_out_outliers(top_julian_day: int, top_year: int
         )
         fig.add_artist(con)
         
-        if not second_date_data.empty:
-            target_x = mdates.date2num(second_date)
-            target_y = second_date_data["Lake Area (sq meters)"].iloc[0]
-            
-            source_display_coords = axes['F'].transAxes.transform((1, 0.5))
-            target_display_coords = axes['D'].transData.transform((target_x, target_y))
-            
-            vector = target_display_coords - source_display_coords
-            norm_vector = vector / np.linalg.norm(vector)
-            
-            gap_pixels = 5
-            
-            new_endpoint_display = target_display_coords - gap_pixels * norm_vector
-            new_endpoint_data = axes['D'].transData.inverted().transform(new_endpoint_display)
-            
-            con2 = patches.ConnectionPatch(
-                xyA=(1, 0.5),
-                coordsA=axes['F'].transAxes,
-                xyB=new_endpoint_data,
-                coordsB=axes['D'].transData,
-                arrowstyle="->",
-                linestyle="-",
-                color="black",
-                linewidth=1,
-                mutation_scale=15
-            )
-            fig.add_artist(con2)
+        # Connection line for the bottom image (F -> D), connecting to the bottom of the vertical line
+        con2 = patches.ConnectionPatch(
+            xyA=(1, 0.5),
+            coordsA=axes['F'].transAxes,
+            xyB=(mdates.date2num(second_date), min_y),
+            coordsB=axes['D'].transData,
+            arrowstyle="->",
+            linestyle="-",
+            color="black",
+            linewidth=1,
+            mutation_scale=15
+        )
+        fig.add_artist(con2)
 
     except FileNotFoundError as e:
         print(f"Error: Could not find lake extent data or image files: {e}")
