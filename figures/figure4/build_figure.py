@@ -1,9 +1,44 @@
-from PIL import Image, ImageDraw, ImageFont
+"""
+This script produces Figure 4 of the manuscript:
+
+
+
+:author:
+    Qazi T. Ashikin
+
+"""
+
+import pathlib
+
 import matplotlib.pyplot as plt
 import numpy as np
-import os
+from PIL import Image, ImageDraw, ImageFont
 
-def annotate_image(image_path, output_path, append_letter, annotations_data, font_path="../data/fonts/helvetica-bold.ttf"):
+
+BASEPATH = pathlib.Path.cwd()
+AUXILIARIES_PATH = BASEPATH.parent / "data/auxiliaries/figure4"
+
+
+def annotate_image(
+    image_path: pathlib.Path,
+    annotations_data: list[dict],
+    font_path: str = "../data/fonts/helvetica-bold.ttf",
+) -> Image.Image | None:
+    """
+    Adds annotations to the images, corresponding to the regions of interest in the
+    analysis and the resultant label.
+
+    Parameters
+    ----------
+    image_path:
+        Path to image file to annotate.
+    annotations_data:
+        List of dictionaries containing annotation information.
+    font_path:
+        Path to font to use for annotations.
+
+    """
+
     try:
         img = Image.open(image_path).convert("RGB")
     except FileNotFoundError:
@@ -19,19 +54,14 @@ def annotate_image(image_path, output_path, append_letter, annotations_data, fon
         label_font_size = 16
         label_font = ImageFont.truetype(font_path, label_font_size)
     except IOError:
-        print(f"Warning: Could not load font from {font_path}. Using default Pillow font.")
+        print(
+            f"Warning: Could not load font from {font_path}. Using default Pillow font."
+        )
         label_font = ImageFont.load_default()
-        label_font_size = 10 
-
-    try:
-        append_letter_font_size = 16
-        append_letter_font = ImageFont.truetype(font_path, append_letter_font_size)
-    except IOError:
-        append_letter_font = ImageFont.load_default()
-        append_letter_font_size = 10
+        label_font_size = 10
 
     text_color = (255, 255, 255)
-    box_thickness = 2
+    box_thickness = 3
 
     for annotation in annotations_data:
         x_start, y_start, x_end, y_end = annotation["coords"]
@@ -45,31 +75,28 @@ def annotate_image(image_path, output_path, append_letter, annotations_data, fon
 
         draw.rectangle([(x1, y1), (x2, y2)], outline=box_color, width=box_thickness)
 
-        text_bbox = draw.textbbox((0,0), label, font=label_font)
+        text_bbox = draw.textbbox((0, 0), label, font=label_font)
         text_width = text_bbox[2] - text_bbox[0]
         text_height = text_bbox[3] - text_bbox[1]
 
-        text_x = x1 + 10
-        text_y = y1 - text_height - 7 
+        text_x = x1 + 5
+        text_y = y1 - text_height - 7
 
         if text_y < 0:
             text_y = y1 + 5
 
         draw.text((text_x, text_y), label, font=label_font, fill=text_color)
 
-    append_letter_text_bbox = draw.textbbox((0,0), append_letter, font=append_letter_font)
-    append_letter_text_width = append_letter_text_bbox[2] - append_letter_text_bbox[0]
-    append_letter_text_height = append_letter_text_bbox[3] - append_letter_text_bbox[1]
-
-    append_letter_x = img.width - append_letter_text_width - 12
-    append_letter_y = append_letter_text_height + 5
-    draw.text((append_letter_x, append_letter_y), append_letter, font=append_letter_font, fill=(255, 255, 255))
-    
-    border_color = (0, 0, 0) 
-    border_thickness = 2
+    border_color = (0, 0, 0)
+    border_thickness = 3
     img_width, img_height = img.size
-    draw.rectangle([(0, 0), (img_width - 1, img_height - 1)], outline=border_color, width=border_thickness)
+    draw.rectangle(
+        [(0, 0), (img_width - 1, img_height - 1)],
+        outline=border_color,
+        width=border_thickness,
+    )
 
+    output_path = image_path.parent / f"{image_path.stem}_annotated.png"
     try:
         img.save(output_path)
         print(f"Annotated image saved to {output_path}")
@@ -78,49 +105,48 @@ def annotate_image(image_path, output_path, append_letter, annotations_data, fon
         print(f"Error saving image: {e}")
         return None
 
-def main():
-    good_vis_img = "../data/auxiliaries/figure4/example1.png"
-    bad_vis_img = "../data/auxiliaries/figure4/example2.png"
 
-    annotations_good_visibility = [
+def main():
+    # Image 1 - good visibility
+    img1 = AUXILIARIES_PATH / "example1.png"
+    img1_annotations = [
         {"label": "Plume", "coords": (100, 370, 340, 250), "color": (0, 200, 0)},
         {"label": "Fumaroles", "coords": (540, 130, 635, 200), "color": (0, 200, 0)},
-        {"label": "Fence", "coords": (10, 470, 630, 380), "color": (0, 200, 0)}
+        {"label": "Fence", "coords": (10, 470, 630, 380), "color": (0, 200, 0)},
     ]
+    img1_pil = annotate_image(img1, img1_annotations)
 
-    annotations_poor_visibility = [
+    # Image 2 - bad visibility
+    img2 = AUXILIARIES_PATH / "example2.png"
+    img2_annotations = [
         {"label": "Plume", "coords": (100, 370, 340, 250), "color": (230, 0, 0)},
         {"label": "Fumaroles", "coords": (540, 130, 635, 200), "color": (230, 0, 0)},
-        {"label": "Fence", "coords": (10, 470, 630, 380), "color": (0, 200, 0)}
+        {"label": "Fence", "coords": (10, 470, 630, 380), "color": (0, 200, 0)},
     ]
+    img2_pil = annotate_image(img2, img2_annotations)
 
-    output_good_img = "../data/auxiliaries/figure4/example1_annotated.png"
-    output_bad_img = "../data/auxiliaries/figure4/example2_annotated.png"
+    fig, axes = plt.subplots(
+        1, 2, figsize=(17.5 / 2.54, 6.7 / 2.54), constrained_layout=True
+    )
 
-    img1_pil = annotate_image(good_vis_img, output_good_img, "a", annotations_good_visibility)
-    img2_pil = annotate_image(bad_vis_img, output_bad_img, "b", annotations_poor_visibility)
+    for ax, img, label in zip(axes, [img1_pil, img2_pil], "ab"):
+        ax.imshow(np.asarray(img))
+        ax.axis("off")
+        ax.text(
+            0.02,
+            0.95,
+            label,
+            ha="left",
+            va="center",
+            transform=ax.transAxes,
+            fontweight="bold",
+            c="white",
+        )
 
-    if img1_pil and img2_pil:
-        # Calculate figure size in inches for 175mm width
-        width_inches = 175 / 25.4
-        # Maintain original aspect ratio (12/6 = 2)
-        height_inches = width_inches / 2
+    final_output_path = BASEPATH / "classification-examples.png"
+    fig.savefig(final_output_path, dpi=600)
+    print(f"Combined figure saved to {final_output_path}")
 
-        fig, axes = plt.subplots(1, 2, figsize=(width_inches, height_inches))
-
-        axes[0].imshow(np.array(img1_pil))
-        axes[0].axis('off')
-
-        axes[1].imshow(np.array(img2_pil))
-        axes[1].axis('off')
-
-        plt.tight_layout()
-        final_output_path = "classification-examples.png"
-        plt.savefig(final_output_path, dpi=600, bbox_inches='tight')
-        plt.close(fig)
-        print(f"Combined figure saved to {os.path.abspath(final_output_path)}")
-    else:
-        print("Could not generate one or both annotated images. Skipping combined figure creation.")
 
 if __name__ == "__main__":
     main()
