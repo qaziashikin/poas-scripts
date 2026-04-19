@@ -20,7 +20,16 @@ import pandas as pd
 from scipy.interpolate import CubicSpline
 
 
-plt.style.use("../basic.mplstyle")
+SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
+STYLE_PATH = SCRIPT_DIR.parent / "basic.mplstyle"
+
+if STYLE_PATH.exists():
+    try:
+        plt.style.use(str(STYLE_PATH))
+    except OSError:
+        plt.style.use("default")
+else:
+    plt.style.use("default")
 
 
 def crop_image(image: np.ndarray, x: int, y: int, a: int, b: int) -> np.ndarray:
@@ -113,7 +122,7 @@ def detect_outliers(pixels, window_size=4, threshold=0.75):
 
 
 def detect_outliers_zscore(
-    data: pd.Series, window_days: int = 11, z_threshold: float = 3.5
+    data: pd.Series, window_days: int = 10, z_threshold: float = 1
 ):
     """Detect outliers using a rolling Z-score."""
 
@@ -142,7 +151,7 @@ def detect_outliers_zscore(
 def prepare_lake_extent_data():
     """Load and prepare lake extent data, evaluating True/False strings."""
 
-    base_path = pathlib.Path.cwd().parent / "data/lake_extent"
+    base_path = SCRIPT_DIR.parent / "data" / "lake_extent"
     lake_extents = pd.concat(
         [
             pd.read_csv(base_path / f"lake_extent_estimates_{year}.csv")
@@ -164,6 +173,7 @@ def prepare_lake_extent_data():
     # 2. Z-score method (uncomment to use Z-score, comment out the original method call above)
     detected_outliers = detect_outliers_zscore(lake_extents["Lake Area (sq meters)"])
 
+
     # Create a mask for rows where 'Outlier' is 'True' or 'False' (case-insensitive)
     eval_mask = (
         lake_extents["Outlier"]
@@ -178,7 +188,7 @@ def prepare_lake_extent_data():
     else:
         pass
 
-    lake_extents.loc[eval_mask, "Outlier"] = detected_outliers[eval_mask]
+    lake_extents.loc[eval_mask, "Outlier"] = detected_outliers[eval_mask].astype(str)
 
     return lake_extents
 
@@ -199,9 +209,11 @@ def plot_lake_extent_timeseries(ax, lake_extents, non_outliers_df, outliers_df, 
     )
     non_outliers_df = non_outliers_df.dropna(subset=["Lake Area (sq meters)"])
 
-    non_outliers_df.loc[:, "Averages"] = non_outliers_df.rolling(
-        "10D", on="Date", center=True
-    ).mean(numeric_only=True)["Lake Area (sq meters)"]
+    non_outliers_df.loc[:, "Averages"] = (
+        non_outliers_df.rolling("10D", on="Date", center=True)
+        .mean(numeric_only=True)["Lake Area (sq meters)"]
+        .astype(float)
+    )
 
     spline = CubicSpline(
         [
@@ -263,13 +275,14 @@ def save_updated_data(lake_extents):
     ].copy()
 
     columns_order = ["Date", "White Pixel Count", "Lake Area (sq meters)", "Outlier"]
+    base_path = SCRIPT_DIR.parent / "data" / "lake_extent"
     lake_extents_2024_updated.to_csv(
-        "../data/lake_extent/lake_extent_estimates_2024.csv",
+        base_path / "lake_extent_estimates_2024.csv",
         index=False,
         columns=columns_order,
     )
     lake_extents_2025_updated.to_csv(
-        "../data/lake_extent/lake_extent_estimates_2025.csv",
+        base_path / "lake_extent_estimates_2025.csv",
         index=False,
         columns=columns_order,
     )
@@ -304,7 +317,7 @@ def add_visible_image(date: dt, ax: plt.Axes) -> None:
 
     """
 
-    image_path = pathlib.Path.cwd().parent / "data/lake_extent/visible_images_for_plot"
+    image_path = SCRIPT_DIR.parent / "data" / "lake_extent" / "visible_images_for_plot"
     try:
         image_file = get_image_for_date(date, image_path)
     except FileNotFoundError:
@@ -349,19 +362,19 @@ def add_infrared_image(date: dt, ax: plt.Axes) -> None:
 
     """
 
-    image_path = pathlib.Path.cwd().parent / "data/lake_extent/ir_images_for_plot"
+    image_path = SCRIPT_DIR.parent / "data" / "lake_extent" / "ir_images_for_plot"
     try:
         image_file = get_image_for_date(date, image_path)
     except FileNotFoundError:
         return
 
-    mask = (
-        image_path.parent
-        / f"results/{date.year}/{date.timetuple().tm_yday:03d}_lake_extent.png"
-    )
+    mask_dir = image_path.parent / "results" / str(date.year)
+    mask = mask_dir / f"{date.timetuple().tm_yday}_lake_extent.png"
     if not mask.exists():
-        print(f"No mask found for {date}.")
-        return
+        mask = mask_dir / f"{date.timetuple().tm_yday:03d}_lake_extent.png"
+        if not mask.exists():
+            print(f"No mask found for {date}.")
+            return
 
     img = cv2.imread(image_file, cv2.IMREAD_GRAYSCALE)
     base_img = cv2.cvtColor((img * 0.9).astype(np.uint8), cv2.COLOR_GRAY2BGR)
