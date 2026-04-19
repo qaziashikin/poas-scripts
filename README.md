@@ -1,4 +1,4 @@
-# poas-scripts
+# Poas Volcano Infrared Image Analysis
 
 This repository contains scripts for monitoring and analyzing volcanic activity at Poás Volcano, Costa Rica, using infrared (IR) and visible imagery from the Volcano Photo Monitoring Internet (VPMI) system. The project focuses on three main areas of interest:
 
