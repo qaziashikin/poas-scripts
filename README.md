@@ -45,6 +45,33 @@ poas-scripts/
 - scikit-learn
 - Pillow (PIL)
 
+## Fonts
+
+The figure generation scripts use Helvetica fonts for consistent styling. To use custom fonts:
+
+1. Create the directory `figures/data/fonts/` in the project root
+2. Download Helvetica and Helvetica bold fonts in a TTF file format (`helvetica.ttf` and `helvetica-bold.ttf`) from a trusted source
+3. Place the font files in `figures/data/fonts/`
+
+If the fonts are not found in this directory, the scripts will attempt to use system Helvetica fonts. If neither are available, they will fall back to default Pillow fonts.
+
+### Font Installation by OS
+
+#### macOS
+
+Helvetica is included by default.
+
+#### Windows
+
+1. Download Helvetica fonts from a trusted source (e.g., Adobe Fonts or font repositories)
+2. Install system-wide or place in `figures/data/fonts/`
+
+#### Linux
+
+1. Download Helvetica fonts
+2. Install system-wide using your package manager, or place in `figures/data/fonts/`
+3. If installing system-wide, run `fc-cache -f -v`
+
 ## Data Requirements
 
 The scripts expect data to be organized in the following structure:

@@ -17,12 +17,13 @@ from PIL import Image, ImageDraw, ImageFont
 
 BASEPATH = pathlib.Path.cwd()
 AUXILIARIES_PATH = BASEPATH.parent / "data/auxiliaries/figure4"
+FONT_DIR = BASEPATH.parent / "data" / "fonts"
 
 
 def annotate_image(
     image_path: pathlib.Path,
     annotations_data: list[dict],
-    font_path: str = "../data/fonts/helvetica-bold.ttf",
+    font_path: str = None,
 ) -> Image.Image | None:
     """
     Adds annotations to the images, corresponding to the regions of interest in the
@@ -52,10 +53,19 @@ def annotate_image(
 
     try:
         label_font_size = 16
-        label_font = ImageFont.truetype(font_path, label_font_size)
+        if font_path:
+            label_font = ImageFont.truetype(font_path, label_font_size)
+        else:
+            # Try to load from project fonts directory first
+            font_file = FONT_DIR / "helvetica-bold.ttf"
+            if font_file.exists():
+                label_font = ImageFont.truetype(str(font_file), label_font_size)
+            else:
+                # Fall back to system Helvetica
+                label_font = ImageFont.truetype("Helvetica-Bold", label_font_size)
     except IOError:
         print(
-            f"Warning: Could not load font from {font_path}. Using default Pillow font."
+            f"Warning: Could not load Helvetica-Bold font from {FONT_DIR} or system. Using default Pillow font."
         )
         label_font = ImageFont.load_default()
         label_font_size = 10
